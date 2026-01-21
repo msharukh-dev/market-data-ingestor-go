@@ -1,0 +1,174 @@
+# WS Ingestor Documentation
+
+## Overview
+WS Ingestor is a high-performance Go application designed to ingest real-time market data from WebSocket streams. It processes incoming data in batches, stores it in PostgreSQL for persistence, and caches it in Redis for fast access. The application uses a worker pool for concurrent processing to handle high-volume data streams efficiently.
+
+## Architecture
+The application follows a modular architecture with the following components:
+
+### 1. WebSocket Client (`internal/websocket/`)
+- Connects to a WebSocket endpoint (e.g., market data provider)
+- Receives real-time market data messages
+- Parses and sends data to an internal channel for processing
+
+### 2. Processor (`internal/processor/`)
+- Implements a worker pool pattern with configurable number of workers
+- Batches incoming data for efficient bulk operations
+- Flushes batches to storage and cache every 2 seconds or when batch size is reached
+- Each worker processes data independently for parallelism
+
+### 3. Storage Layer (`internal/storage/`)
+- **PostgreSQL Store**: Handles persistent storage of market data
+  - Creates tables dynamically
+  - Supports batch inserts (no updates, as Redis handles caching)
+  - Allows duplicate names for historical data
+- **Redis Cache**: Provides fast in-memory caching
+  - Stores recent market data for quick retrieval
+  - Complements PostgreSQL for read-heavy operations
+
+### 4. Configuration (`internal/config/`)
+- Loads settings from environment variables
+- Supports WebSocket URL, API keys, database connections, batch sizes, etc.
+
+### 5. Models (`internal/models/`)
+- Defines data structures for market data (name, timestamp, exchange, data payload)
+
+## Setup and Installation
+
+### Prerequisites
+- Go 1.19+
+- PostgreSQL database
+- Redis server
+- Access to a WebSocket market data feed
+
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd ws_ingestor
+   ```
+
+2. Install dependencies:
+   ```bash
+   go mod tidy
+   ```
+
+3. Build the application:
+   ```bash
+   go build ./cmd/app
+   ```
+
+## Configuration
+The application is configured via environment variables. Create a `.env` file or set them in your environment:
+
+### Required Variables
+- `WS_URL`: WebSocket endpoint URL (e.g., `wss://api.example.com/ws`)
+- `WS_API_KEY`: API key for WebSocket authentication
+- `DATABASE_URL`: PostgreSQL connection string (e.g., `postgres://user:pass@localhost/dbname?sslmode=disable`)
+
+### Optional Variables
+- `BATCH_SIZE`: Number of records to batch before flushing (default: 100)
+- `NUM_WORKERS`: Number of processor workers (default: 4)
+- `MARKET_DATA_TABLE_NAME`: PostgreSQL table name (default: "market_data")
+- `REDIS_ADDR`: Redis server address (default: localhost:6379)
+- `REDIS_PASSWORD`: Redis password (if required)
+- `REDIS_DB`: Redis database number (default: 0)
+
+Example `.env` file:
+```
+WS_URL=wss://api.marketdata.com/stream
+WS_API_KEY=your-api-key-here
+DATABASE_URL=postgres://user:password@localhost/marketdb?sslmode=disable
+BATCH_SIZE=200
+NUM_WORKERS=8
+REDIS_ADDR=localhost:6379
+```
+
+## Usage
+
+### Running the Application
+1. Set up your environment variables
+2. Start the application:
+   ```bash
+   ./app
+   ```
+   Or with environment variables:
+   ```bash
+   WS_URL=... WS_API_KEY=... DATABASE_URL=... ./app
+   ```
+
+### Monitoring
+The application logs key events:
+- WebSocket connection status
+- Batch processing (size and success/failure)
+- Database operations
+- Errors and shutdown signals
+
+### Shutdown
+Send SIGINT (Ctrl+C) or SIGTERM to gracefully shut down the application. It will:
+- Cancel the context
+- Wait for all workers to finish
+- Close database and cache connections
+
+## Database Schema
+The PostgreSQL table is created automatically:
+
+```sql
+CREATE TABLE market_data (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    timestamp BIGINT NOT NULL,
+    data JSONB
+);
+```
+
+- `id`: Auto-incrementing primary key
+- `name`: Market data identifier (allows duplicates)
+- `timestamp`: Unix timestamp
+- `data`: JSON payload with market data details
+
+## API and Data Flow
+1. WebSocket client connects and listens for messages
+2. Incoming data is parsed into `models.MarketData` structs
+3. Data is sent to a buffered channel (capacity: 1000)
+4. Worker pool processes data in parallel:
+   - Accumulates data into batches
+   - Flushes to PostgreSQL and Redis when batch is full or timer expires
+5. Application handles graceful shutdown on signals
+
+## Performance Considerations
+- **Worker Pool**: Adjust `NUM_WORKERS` based on CPU cores and data volume
+- **Batch Size**: Larger batches reduce I/O but increase memory usage
+- **Channel Buffer**: Sized at 1000 to handle bursts; increase if needed
+- **Database**: Ensure PostgreSQL and Redis are optimized for your load
+- **Memory**: Each worker maintains its own batch slice
+
+## Error Handling
+- WebSocket disconnections are logged but not retried (application exits)
+- Database errors cause batch rollback and logging
+- Invalid data (e.g., zero timestamp) is skipped
+- Context cancellation ensures clean shutdown
+
+## Development
+- Code is organized in `internal/` packages following Go best practices
+- Use `go test` for testing (if tests are added)
+- Dependencies: `github.com/lib/pq` for PostgreSQL, `github.com/go-redis/redis` for Redis
+
+## Troubleshooting
+- **Connection Issues**: Check WebSocket URL and API key
+- **Database Errors**: Verify PostgreSQL connection string and permissions
+- **High CPU/Memory**: Reduce workers or batch size
+- **Data Loss**: Monitor logs for batch insert failures
+
+## Contributing
+1. Follow Go coding standards
+2. Add tests for new features
+3. Update documentation for changes
+4. Use meaningful commit messages
+
+## License
+[Add license information here]
+
+---
+Generated on December 27, 2025</content>
+<parameter name="filePath">c:\Sharukh\ws_ingestor\DOCUMENTATION.txt

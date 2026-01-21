@@ -1,0 +1,67 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Binaries and build artifacts
+/bin/
+/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.so.*
+*.dylib
+*.o
+*.a
+*.out
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+*.sublime-project
+*.sublime-workspace
+
+# Go
+vendor/
+.go/
+*.go.sum
+
+# Logs
+*.log
+logs/
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+*.cover
+.coverage
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Certificates and secrets
+*.pem
+*.key
+*.cert
+secret*
